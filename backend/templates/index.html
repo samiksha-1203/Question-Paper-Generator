@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Question Paper Generator — NLP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=6">
+<script src="{{ url_for('static', filename='js/vendor/chart.umd.js') }}"></script>
+</head>
+<body>
+<div id="toast" class="toast"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">Q</div>
+    <div class="brand-text">
+      <span class="brand-name">Question Paper Generator</span>
+      <span class="brand-tag">NLP-Powered · Weightage Aware</span>
+    </div>
+  </div>
+  <button class="btn btn-ghost" id="resetBtn" title="Start a new project">↺ New Project</button>
+</header>
+
+<nav class="stepper" id="stepper">
+  <div class="step active" data-step="1"><span class="step-num">1</span><span>Upload Materials</span></div>
+  <div class="step" data-step="2"><span class="step-num">2</span><span>Configure Paper</span></div>
+  <div class="step" data-step="3"><span class="step-num">3</span><span>Generate</span></div>
+  <div class="step" data-step="4"><span class="step-num">4</span><span>Edit Paper</span></div>
+  <div class="step" data-step="5"><span class="step-num">5</span><span>Dashboard</span></div>
+  <div class="step" data-step="6"><span class="step-num">6</span><span>Export</span></div>
+</nav>
+
+<main class="wizard">
+
+  <!-- STEP 1: UPLOAD -->
+  <section class="panel active" id="panel-1">
+    <div class="panel-head">
+      <h2>Upload Materials</h2>
+      <p>Add PDFs, DOCX, PPTX, or TXT files. Modules and equal weightage are configured on the next step.</p>
+    </div>
+
+    <div class="dropzone" id="dropzone">
+      <input type="file" id="fileInput" multiple accept=".pdf,.docx,.pptx,.txt" hidden>
+      <div class="dropzone-inner">
+        <div class="dropzone-icon">⬆</div>
+        <div><strong>Drop files here</strong> or <button class="link-btn" id="browseBtn">browse</button></div>
+        <div class="dropzone-hint">.pdf, .docx, .pptx, .txt — multiple files supported</div>
+      </div>
+    </div>
+
+    <div id="uploadStatus" class="upload-status" role="status" aria-live="polite" style="display:none;"></div>
+
+    <div class="ocr-lang-box" id="ocrLangBox" style="display:none;">
+      <span class="hint-label">Scanned/image PDFs will be read with OCR in:</span>
+      <div class="ocr-lang-options" id="ocrLangOptions"></div>
+    </div>
+
+    <div id="uploadErrors" class="alert alert-error" style="display:none;"></div>
+
+    <table class="file-table" id="fileTable">
+      <thead>
+        <tr><th>File</th><th>Words</th><th>OCR</th><th></th></tr>
+      </thead>
+      <tbody id="fileTableBody"></tbody>
+    </table>
+    <div class="empty-hint" id="fileEmptyHint">No files uploaded yet.</div>
+
+    <div class="panel-actions">
+      <button class="btn btn-primary" id="toStep2">Continue → Configure Paper</button>
+    </div>
+  </section>
+
+  <!-- STEP 2: CONFIGURE -->
+  <section class="panel" id="panel-2">
+    <div class="panel-head">
+      <h2>Configure Paper</h2>
+      <p>Set modules & weightage, difficulty distribution, and overall paper settings.</p>
+    </div>
+
+    <div class="config-grid">
+      <div class="card">
+        <h3>Modules & Weightage</h3>
+        <table class="config-table" id="moduleTable">
+          <thead><tr><th>Module Name</th><th>Weightage %</th><th></th></tr></thead>
+          <tbody id="moduleTableBody"></tbody>
+        </table>
+        <div class="stack-inline" style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" id="addModuleBtn">+ Add Module</button>
+          <button class="btn btn-ghost btn-sm" id="autoModuleBtn">Auto-weight by material volume</button>
+        </div>
+        <p class="hint">Automatic weights use extracted text volume as a starting point. You can still edit every module weight.</p>
+        <div class="total-row">Total: <span id="moduleTotal">100</span>% <span id="moduleTotalWarn" class="warn"></span></div>
+      </div>
+
+      <div class="card">
+        <h3>Difficulty Weightage</h3>
+        <div class="diff-inputs">
+          <label>Easy % <input type="number" id="diffEasy" min="0" max="100" value="30"></label>
+          <label>Medium % <input type="number" id="diffMedium" min="0" max="100" value="40"></label>
+          <label>Hard % <input type="number" id="diffHard" min="0" max="100" value="30"></label>
+        </div>
+        <div class="total-row">Total: <span id="diffTotal">100</span>% <span id="diffTotalWarn" class="warn"></span></div>
+        <p class="hint">Difficulty is derived from Bloom's Taxonomy level + text complexity of the source material.</p>
+      </div>
+
+      <div class="card">
+        <h3>Paper Settings</h3>
+        <label>Title <input type="text" id="cfgTitle" value="Question Paper"></label>
+        <label>Subject <input type="text" id="cfgSubject" value="General"></label>
+        <label>Duration <input type="text" id="cfgDuration" value="120 minutes"></label>
+        <label>Paper for <select id="cfgEducationLevel">
+          <option>General / Mixed</option>
+          <option>Class 10</option>
+          <option>Class 12</option>
+          <option>Diploma</option>
+          <option>Degree</option>
+          <option>Engineering Year 1</option>
+          <option>Engineering Year 2</option>
+          <option>Engineering Year 3</option>
+          <option>Engineering Year 4</option>
+        </select></label>
+        <label style="display:flex; align-items:center; gap:8px; margin-top:10px;">
+          <input type="checkbox" id="cfgUseAllMaterial" checked>
+          Use all uploaded material (best fit)
+        </label>
+        <p class="hint">When enabled, every extracted section is considered instead of sampling a subset. Larger uploads may take longer.</p>
+      </div>
+
+      <div class="card card-wide">
+        <h3>Marks Scheme</h3>
+        <p class="hint" style="margin-top:-6px;">Tell the generator exactly how many questions of each marks value you want — e.g. "6 questions of 2 marks, 6 of 5 marks, 4 of 10 marks". Total marks and question count are computed from this, so the paper can never come out over or under what you planned. Set "Offered" higher than "Must attempt" to create a choice block like <em>"Attempt any 2 of the following 3"</em>.</p>
+        <table class="config-table" id="marksSchemeTable">
+          <thead><tr><th>Marks per question</th><th>Offered</th><th>Must attempt</th><th></th></tr></thead>
+          <tbody id="marksSchemeBody"></tbody>
+        </table>
+        <button class="btn btn-ghost btn-sm" id="addMarksRowBtn">+ Add row</button>
+        <div class="total-row">
+          Total marks: <strong id="schemeTotalMarks">0</strong> &nbsp;•&nbsp;
+          Total questions to attempt: <strong id="schemeTotalQuestions">0</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-actions">
+      <button class="btn btn-ghost" data-goto="1">← Back</button>
+      <button class="btn btn-primary" id="toStep3">Continue → Generate</button>
+    </div>
+  </section>
+
+  <!-- STEP 3: GENERATE -->
+  <section class="panel" id="panel-3">
+    <div class="panel-head">
+      <h2>Generate Question Paper</h2>
+      <p>Reads extracted source text, drafts cited questions locally, validates evidence, and allocates the paper to your marks scheme.</p>
+    </div>
+
+    <div class="generate-box">
+      <button class="btn btn-primary btn-lg" id="generateBtn">⚙ Generate Question Paper</button>
+      <div id="generateStatus" class="generate-status"></div>
+      <div id="generateProgress" class="generate-progress" hidden>
+        <progress id="generateProgressBar" max="100" value="0" aria-label="Question paper generation progress"></progress>
+        <span id="generateProgressValue">0%</span>
+        <span id="generateEta" class="generate-eta" aria-live="polite">ETA: estimating</span>
+      </div>
+    </div>
+
+    <div id="generateError" class="alert alert-error" style="display:none;"></div>
+
+    <div class="panel-actions">
+      <button class="btn btn-ghost" data-goto="2">← Back</button>
+      <button class="btn btn-primary" id="toStep4" disabled>Continue → Edit Paper</button>
+    </div>
+  </section>
+
+  <!-- STEP 4: EDIT -->
+  <section class="panel" id="panel-4">
+    <div class="panel-head">
+      <h2>Edit Paper</h2>
+      <p>Edit, delete, reorder, add, or regenerate individual questions. Changes save automatically.</p>
+    </div>
+
+    <div class="paper-meta-bar">
+      <label>Title <input type="text" id="editTitle"></label>
+      <label>Subject <input type="text" id="editSubject"></label>
+      <label>Duration <input type="text" id="editDuration"></label>
+      <div class="marks-pill">Total marks: <strong id="editTotalMarks">0</strong></div>
+    </div>
+
+    <div class="instructions-box">
+      <h4>Instructions</h4>
+      <ul id="instructionsList"></ul>
+      <button class="btn btn-ghost btn-sm" id="addInstructionBtn">+ Add instruction</button>
+    </div>
+
+    <div id="questionList" class="question-list"></div>
+
+    <button class="btn btn-ghost" id="addQuestionBtn">+ Add Question</button>
+
+    <div class="panel-actions">
+      <button class="btn btn-ghost" data-goto="3">← Back</button>
+      <button class="btn btn-primary" id="toStep5">Continue → Dashboard</button>
+    </div>
+  </section>
+
+  <!-- STEP 5: DASHBOARD -->
+  <section class="panel" id="panel-5">
+    <div class="panel-head">
+      <h2>Dashboard Analysis</h2>
+      <p>Module and difficulty targets, source contributions, marks, and generation quality.</p>
+    </div>
+
+    <div class="metric-cards" id="qualityCards"></div>
+
+    <div class="dash-grid">
+      <div class="card"><h3>Module: Target vs Actual (marks)</h3><div class="chart-box"><canvas id="chartModule"></canvas></div></div>
+      <div class="card"><h3>Difficulty Distribution</h3><div class="chart-box"><canvas id="chartDifficulty"></canvas></div></div>
+      <div class="card"><h3>PDF Contribution</h3><div class="chart-box"><canvas id="chartPdf"></canvas></div></div>
+      <div class="card"><h3>Marks by Difficulty</h3><div class="chart-box"><canvas id="chartMarksDiff"></canvas></div></div>
+    </div>
+
+    <div class="panel-actions">
+      <button class="btn btn-ghost" data-goto="4">← Back</button>
+      <button class="btn btn-primary" data-goto="6">Continue → Export</button>
+    </div>
+  </section>
+
+  <!-- STEP 6: EXPORT -->
+  <section class="panel" id="panel-6">
+    <div class="panel-head">
+      <h2>Export</h2>
+      <p>Download the question paper and answer key as PDF or editable Word documents.</p>
+    </div>
+
+    <div class="export-grid">
+      <div class="card export-card">
+        <h3>Question Paper</h3>
+        <button class="btn btn-primary" id="exportPaperPdf">Download PDF</button>
+        <button class="btn btn-secondary" id="exportPaperDocx">Download DOCX (editable)</button>
+      </div>
+      <div class="card export-card">
+        <h3>Answer Key</h3>
+        <button class="btn btn-primary" id="exportKeyPdf">Download PDF</button>
+        <button class="btn btn-secondary" id="exportKeyDocx">Download DOCX (editable)</button>
+      </div>
+    </div>
+
+    <div class="panel-actions">
+      <button class="btn btn-ghost" data-goto="5">← Back</button>
+    </div>
+  </section>
+
+</main>
+
+<script src="{{ url_for('static', filename='js/app.js') }}?v=9"></script>
+</body>
+</html>
