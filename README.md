@@ -85,19 +85,79 @@ python -m pip install -r backend\requirements.txt
 Wait for pip to finish. Do not run `pip install requirements.txt`; the `-r`
 option tells pip to install the packages listed inside the file.
 
-### Step 7: Start the application
+### Step 7: Install Ollama for AI question generation
 
-Make sure the virtual environment is still active, then run:
+Ollama runs the language model locally on your computer. Skip this step if
+you want to use the built-in template-based question generator instead.
+
+1. Download and install Ollama for Windows from
+   [ollama.com/download](https://ollama.com/download).
+2. Open a new PowerShell window after installation and download the default
+   model:
+
+   ```powershell
+   ollama pull qwen3:1.7b
+   ```
+
+3. Confirm the model is installed:
+
+   ```powershell
+   ollama list
+   ```
+
+The Ollama application normally runs in the background. If the `ollama`
+command is not recognized, close and reopen PowerShell. The web app uses
+`qwen3:1.7b` by default when Ollama is running. If Ollama is not installed
+or running, the app can fall back to template-based generation.
+
+### Step 8: (Optional) Set up OCR for scanned PDFs
+
+Skip this step if your PDFs contain selectable text or you will upload DOCX,
+PPTX, or TXT files. OCR is only needed to read scanned/image-based PDFs.
+
+1. Install the Tesseract OCR application from the
+   [UB Mannheim Tesseract page](https://github.com/UB-Mannheim/tesseract/wiki).
+   During installation, make sure to include the language data you need.
+2. Download and extract a Windows Poppler release from
+   [poppler-windows releases](https://github.com/oschwartz10612/poppler-windows/releases).
+   Find the extracted `bin` folder containing `pdftoppm.exe`.
+3. Add both program folders to Windows `PATH`:
+   1. Open Start and search for **Edit environment variables for your account**.
+   2. Select **Path**, then **Edit**, then **New**.
+   3. Paste the folder containing `tesseract.exe` and select **New** again.
+   4. Paste the Poppler `bin` folder containing `pdftoppm.exe`, then select
+      **OK** in each open dialog to save.
+4. Close and reopen PowerShell, then verify that Windows can find both
+   programs:
+
+   ```powershell
+   tesseract --version
+   pdftoppm -h
+   ```
+
+English, Hindi, and Marathi OCR are supported when their Tesseract language
+data is installed.
+
+### Step 9: Start the application
+
+Return to the project-folder PowerShell window from Step 3. Activate the
+virtual environment if it is not already active:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Start the app:
 
 ```powershell
 python backend\app.py
 ```
 
-Leave this PowerShell window open while using the application. When the
-server has started, open **http://127.0.0.1:5000** in your web browser. To
-stop the server, return to PowerShell and press **Ctrl+C**.
+Leave this window open while using the app. When the server has started,
+open **http://127.0.0.1:5000** in your browser. To stop the server, return
+to PowerShell and press **Ctrl+C**.
 
-### Step 8: Use the application
+### Step 10: Use the application
 
 1. Upload study material in PDF, DOCX, PPTX, or TXT format.
 2. Set up modules, weightages, difficulty, and the marks scheme.
@@ -184,19 +244,12 @@ The system supports:
 ## Tools and Technologies
 
 - Python 3.10+
-- Flask
-- Ollama
-- qwen3:1.7b (default local model)
-- Tesseract OCR
-- Poppler
-- Python libraries:
-  - Flask
-  - pypdf
-  - python-docx
-  - reportlab
-  - nltk
-  - pytesseract
-  - pdf2image
+- Flask for the local web application and API
+- Ollama to run the optional local language model
+- `qwen3:1.7b` as the default Ollama model
+- Tesseract OCR and Poppler for optional scanned-PDF text extraction
+- Python libraries listed in [`backend/requirements.txt`](backend/requirements.txt):
+  Flask, pypdf, python-docx, reportlab, nltk, Werkzeug, pytesseract, and pdf2image
 
 ---
 
@@ -267,15 +320,34 @@ This reduces the risk of generating questions about incidental examples rather t
 
 ### 6. Local language model question generation
 
-When Ollama is available, the app uses the default model, `qwen3:1.7b`.
+When Ollama is installed and running, the app uses the locally installed
+`qwen3:1.7b` model by default. The model is pretrained; this project does
+not train or fine-tune it. Ollama runs the model on the user's computer, and
+the Flask backend communicates with it through Ollama's local HTTP API
+(default address: `http://127.0.0.1:11434`).
 
-The system sends source-grounded excerpts to the local model and requests exam-style question candidates. The model is asked to generate content that is aligned with the educational material, not random generic questions.
+In simple terms, question generation works like this:
+
+1. The app extracts and selects passages from the uploaded study material.
+2. The backend sends the passages and instructions to the local model through
+   Ollama.
+3. The model proposes question-and-answer candidates in a structured format.
+4. The app checks the candidates against the source text, removes invalid or
+   duplicate questions, and uses supported candidates to build the paper.
+
+The model proposes wording; application code performs the checks and decides
+which candidates to keep. This is model inference, not model training.
 
 The project supports:
 
 - model-first generation when Ollama is active,
-- template-based fallback when the model is disabled or returns invalid output,
+- template-based fallback when the model is disabled, unavailable, or returns no valid candidates,
 - multilingual handling through alternate generation flows for Devanagari-majority text.
+
+Ollama is a model runner, not the language model itself: `qwen3:1.7b` is the
+model, and Ollama downloads and runs it locally. Tesseract is separate: it is
+OCR software that reads text from scanned page images; it does not generate
+questions.
 
 ### 7. Validation and quality control
 
@@ -327,20 +399,18 @@ The system combines rule-based computational linguistics with local generative A
 
 ### Rule-based NLP components
 
-- text cleaning
-- heading and sentence detection
-- noun phrase recognition
-- concept relevance scoring
-- duplication control
-- difficulty heuristic estimation
-- source sufficiency checks
+- text cleaning and sentence/chunk splitting
+- concept and phrase extraction from source passages
+- rule-based template question generation as a fallback
+- source-evidence and question-structure checks
+- duplicate filtering and difficulty/marks heuristics
 
 ### Generative component
 
-- local model: `qwen3:1.7b`
-- accessed through Ollama
-- source-grounded content generation
-- fallback template generation when needed
+- pretrained local model: `qwen3:1.7b`
+- run by Ollama and called from the backend's local HTTP API
+- generates candidate questions from supplied source excerpts; it is not trained by this project
+- candidates are validated in the application; template generation is the fallback
 
 ### Paper assembly component
 
@@ -378,108 +448,20 @@ The system combines rule-based computational linguistics with local generative A
 Ollama is optional. Tesseract OCR and Poppler are only needed for scanned or
 image-based PDFs; ordinary text-based PDFs do not require them.
 
-### Python dependencies
-
-The exact package names and versions are maintained in
-[`backend/requirements.txt`](backend/requirements.txt):
-
-- Flask
-- pypdf
-- python-docx
-- reportlab
-- nltk
-- Werkzeug
-- pytesseract
-- pdf2image
-
-Install all of them together by following Step 6 in the
-[Windows Installation and Run Guide](#windows-installation-and-run-guide).
+The exact Python package names and versions are maintained in
+[`backend/requirements.txt`](backend/requirements.txt). Install them by
+following Step 6 in the [Windows Installation and Run Guide](#windows-installation-and-run-guide).
 
 ## Installation
 
-The installation instructions in this README are for Windows only. Follow
-the [Windows Installation and Run Guide](#windows-installation-and-run-guide)
-from Step 1 in order.
+All installation steps, including the optional Ollama and OCR setup, are in
+the [Windows Installation and Run Guide](#windows-installation-and-run-guide).
 
 When the app first starts, it may download NLTK language data if an internet
 connection is available. If the download is unavailable, built-in fallback
 tokenizers are used.
 
 ---
-
-## Ollama Setup
-
-Ollama provides local language-model-based question wording. It is not
-required to launch the web app; if it is unavailable, question generation
-falls back to the template pipeline.
-
-1. Install Ollama from [ollama.com](https://ollama.com/).
-2. Download the default model:
-
-```powershell
-ollama pull qwen3:1.7b
-```
-
-3. Make sure Ollama is running, then start the Flask app using Step 7 in the
-   [Windows Installation and Run Guide](#windows-installation-and-run-guide).
-
-On Windows, open the Ollama application after installing it. It normally
-runs in the background. If the `ollama` command is not recognized, restart
-PowerShell after installation or open a new PowerShell window.
-
-The application uses `qwen3:1.7b` by default. To use another model, download
-it with `ollama pull <model-name>` and set `OLLAMA_MODEL` before launching
-the app.
-
-Optional environment variables:
-
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `OLLAMA_MODEL` | `qwen3:1.7b` | Select installed Ollama model |
-| `OLLAMA_URL` | `http://127.0.0.1:11434` | Ollama endpoint |
-| `PORT` | `5000` | Flask server port |
-| `FLASK_DEBUG` | `0` | Debug mode |
-
-To disable model generation and use the template-based pipeline, set
-`OLLAMA_MODEL` to `off` in the terminal where you start the app:
-
-```powershell
-$env:OLLAMA_MODEL = "off"
-```
-
----
-
-## OCR Setup (Optional, Windows)
-
-OCR is only needed for scanned or image-based PDFs. PDFs with selectable
-text, DOCX, PPTX, and TXT files do not need OCR software.
-
-To enable OCR on Windows:
-
-1. Install the Tesseract OCR application. The Windows installer is available
-   from the [UB Mannheim Tesseract page](https://github.com/UB-Mannheim/tesseract/wiki).
-2. Install Poppler for Windows. Make sure its `bin` folder contains
-   `pdftoppm.exe`.
-3. Add the folders containing `tesseract.exe` and `pdftoppm.exe` to the
-   Windows `PATH` environment variable.
-4. Close and reopen PowerShell, then check that Windows can find Tesseract:
-
-   ```powershell
-   tesseract --version
-   ```
-
-5. Install Tesseract language data for the languages you need. The app
-   supports English, Hindi, and Marathi OCR.
-
-If OCR software is not installed, use PDFs with selectable text or another
-supported document type instead.
-
----
-
-## Running the Application
-
-For the complete step-by-step Windows instructions, see
-[Windows Installation and Run Guide](#windows-installation-and-run-guide).
 
 ---
 
