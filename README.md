@@ -1,5 +1,137 @@
 # NLP Question Paper Generator
 
+## Windows Installation and Run Guide
+
+Follow these steps in order. All commands below are for **Windows PowerShell**.
+
+### Step 1: Install Python
+
+1. Download and install Python 3.10 or newer from
+   [python.org/downloads](https://www.python.org/downloads/).
+2. During installation, select **Add python.exe to PATH** if the installer
+   offers that option.
+3. Open PowerShell and verify that Python is installed:
+
+   ```powershell
+   py -3 --version
+   ```
+
+   The version shown must be Python 3.10 or newer. If `py` is not recognized,
+   rerun the Python installer and enable the Python launcher/PATH options.
+
+### Step 2: Download the project
+
+1. Open the project repository on
+   [GitHub](https://github.com/samiksha-1203/Question-Paper-Generator).
+2. Select **Code**, then **Download ZIP**.
+3. In File Explorer, extract the ZIP file.
+4. Open the extracted project folder. It is the folder containing this
+   `README.md` and the `backend` folder.
+
+If you already have the project folder, use that folder instead of downloading
+it again.
+
+### Step 3: Open PowerShell in the project folder
+
+In File Explorer, open the project folder, click the address bar, type
+`powershell`, and press **Enter**. A PowerShell window opens in that folder.
+Check that it is the correct folder:
+
+```powershell
+Get-ChildItem
+```
+
+The list should include `README.md` and `backend`.
+
+### Step 4: Create a Python virtual environment
+
+Run this command in the project folder:
+
+```powershell
+py -3 -m venv .venv
+```
+
+The `.venv` folder keeps this project's Python packages separate from other
+Python applications.
+
+### Step 5: Activate the virtual environment
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+When activation succeeds, the PowerShell prompt usually starts with
+`(.venv)`. If PowerShell says that script execution is disabled, run the
+following command in the same window, then activate again:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+.\.venv\Scripts\Activate.ps1
+```
+
+This changes the policy only for the current PowerShell window.
+
+### Step 6: Install the packages in `requirements.txt`
+
+The project keeps its Python dependency list in
+[`backend/requirements.txt`](backend/requirements.txt). Install every listed
+package with:
+
+```powershell
+python -m pip install --upgrade pip
+python -m pip install -r backend\requirements.txt
+```
+
+Wait for pip to finish. Do not run `pip install requirements.txt`; the `-r`
+option tells pip to install the packages listed inside the file.
+
+### Step 7: Start the application
+
+Make sure the virtual environment is still active, then run:
+
+```powershell
+python backend\app.py
+```
+
+Leave this PowerShell window open while using the application. When the
+server has started, open **http://127.0.0.1:5000** in your web browser. To
+stop the server, return to PowerShell and press **Ctrl+C**.
+
+### Step 8: Use the application
+
+1. Upload study material in PDF, DOCX, PPTX, or TXT format.
+2. Set up modules, weightages, difficulty, and the marks scheme.
+3. Generate and review the questions.
+4. Export the question paper or answer key as PDF or DOCX.
+
+The app is a local, single-user application. Uploaded files and generated
+work are stored in memory and are cleared when the server restarts or a new
+project is created.
+
+### Run it again later
+
+After the first installation, you do not need to reinstall the packages.
+Open PowerShell in the project folder and run:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python backend\app.py
+```
+
+Then open **http://127.0.0.1:5000** in your browser.
+
+### Optional: use a different port
+
+If port 5000 is already being used by another application, set another port
+before starting the server:
+
+```powershell
+$env:PORT = "5001"
+python backend\app.py
+```
+
+Then open **http://127.0.0.1:5001**.
+
 ## Abstract
 
 The NLP Question Paper Generator is a local Flask-based application designed to convert uploaded academic material into a structured, source-grounded question paper. The system accepts PDF, DOCX, PPTX, and TXT files, extracts text from them, cleans and chunks the content, identifies meaningful concepts, generates exam-style questions, validates them against source evidence, and allocates them according to a configurable marks scheme. It also exports the final paper and answer key as PDF or DOCX files.
@@ -135,11 +267,7 @@ This reduces the risk of generating questions about incidental examples rather t
 
 ### 6. Local language model question generation
 
-When Ollama is available, the app uses the default model:
-
-```bash
-qwen3:1.7b
-```
+When Ollama is available, the app uses the default model, `qwen3:1.7b`.
 
 The system sends source-grounded excerpts to the local model and requests exam-style question candidates. The model is asked to generate content that is aligned with the educational material, not random generic questions.
 
@@ -241,85 +369,67 @@ The system combines rule-based computational linguistics with local generative A
 
 ## Requirements
 
-### Software requirements
+### Required
 
 - Python 3.10 or newer
-- Ollama installed and running
-- Optional OCR dependencies for scanned PDFs
+- `pip` (included with Python)
+- The packages listed in [`backend/requirements.txt`](backend/requirements.txt)
+
+Ollama is optional. Tesseract OCR and Poppler are only needed for scanned or
+image-based PDFs; ordinary text-based PDFs do not require them.
 
 ### Python dependencies
 
-The project dependencies are declared in:
-
-```bash
-backend/requirements.txt
-```
-
-The file includes:
+The exact package names and versions are maintained in
+[`backend/requirements.txt`](backend/requirements.txt):
 
 - Flask
 - pypdf
 - python-docx
 - reportlab
 - nltk
+- Werkzeug
 - pytesseract
 - pdf2image
 
----
+Install all of them together by following Step 6 in the
+[Windows Installation and Run Guide](#windows-installation-and-run-guide).
 
 ## Installation
 
-Run the following commands from the repository root.
+The installation instructions in this README are for Windows only. Follow
+the [Windows Installation and Run Guide](#windows-installation-and-run-guide)
+from Step 1 in order.
 
-### Windows PowerShell
-
-```powershell
-cd project/backend
-py -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-```
-
-If execution policy blocks activation:
-
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
-.\.venv\Scripts\Activate.ps1
-```
-
-### macOS / Linux
-
-```bash
-cd project/backend
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-```
-
-Optional NLTK data download:
-
-```bash
-python -c "import nltk; [nltk.download(p, quiet=True) for p in ['punkt','punkt_tab','averaged_perceptron_tagger','averaged_perceptron_tagger_eng','wordnet','omw-1.4','stopwords']]"
-```
+When the app first starts, it may download NLTK language data if an internet
+connection is available. If the download is unavailable, built-in fallback
+tokenizers are used.
 
 ---
 
 ## Ollama Setup
 
-Install Ollama from the official site and pull the default model:
+Ollama provides local language-model-based question wording. It is not
+required to launch the web app; if it is unavailable, question generation
+falls back to the template pipeline.
+
+1. Install Ollama from [ollama.com](https://ollama.com/).
+2. Download the default model:
 
 ```powershell
 ollama pull qwen3:1.7b
-ollama run qwen3:1.7b "hello"
 ```
 
-If Ollama is not already running, start it with:
+3. Make sure Ollama is running, then start the Flask app using Step 7 in the
+   [Windows Installation and Run Guide](#windows-installation-and-run-guide).
 
-```powershell
-ollama serve
-```
+On Windows, open the Ollama application after installing it. It normally
+runs in the background. If the `ollama` command is not recognized, restart
+PowerShell after installation or open a new PowerShell window.
 
-The application reads the model name from the environment variable `OLLAMA_MODEL`, which defaults to `qwen3:1.7b`.
+The application uses `qwen3:1.7b` by default. To use another model, download
+it with `ollama pull <model-name>` and set `OLLAMA_MODEL` before launching
+the app.
 
 Optional environment variables:
 
@@ -330,49 +440,46 @@ Optional environment variables:
 | `PORT` | `5000` | Flask server port |
 | `FLASK_DEBUG` | `0` | Debug mode |
 
-Setting `OLLAMA_MODEL=off` disables local model generation and uses the template-based fallback pipeline.
+To disable model generation and use the template-based pipeline, set
+`OLLAMA_MODEL` to `off` in the terminal where you start the app:
+
+```powershell
+$env:OLLAMA_MODEL = "off"
+```
 
 ---
 
-## OCR Setup (Optional)
+## OCR Setup (Optional, Windows)
 
-OCR is optional but useful for scanned or image-heavy PDFs.
+OCR is only needed for scanned or image-based PDFs. PDFs with selectable
+text, DOCX, PPTX, and TXT files do not need OCR software.
 
-### Ubuntu / Debian
+To enable OCR on Windows:
 
-```bash
-sudo apt-get install -y tesseract-ocr poppler-utils
-sudo apt-get install -y tesseract-ocr-hin tesseract-ocr-mar
-```
+1. Install the Tesseract OCR application. The Windows installer is available
+   from the [UB Mannheim Tesseract page](https://github.com/UB-Mannheim/tesseract/wiki).
+2. Install Poppler for Windows. Make sure its `bin` folder contains
+   `pdftoppm.exe`.
+3. Add the folders containing `tesseract.exe` and `pdftoppm.exe` to the
+   Windows `PATH` environment variable.
+4. Close and reopen PowerShell, then check that Windows can find Tesseract:
 
-### macOS
+   ```powershell
+   tesseract --version
+   ```
 
-```bash
-brew install tesseract tesseract-lang poppler
-```
+5. Install Tesseract language data for the languages you need. The app
+   supports English, Hindi, and Marathi OCR.
 
-### Windows
-
-Install Tesseract from the UB-Mannheim Tesseract build and Poppler from the Windows binaries, then add both directories to `PATH`.
+If OCR software is not installed, use PDFs with selectable text or another
+supported document type instead.
 
 ---
 
 ## Running the Application
 
-From the backend folder:
-
-```bash
-cd project/backend
-python app.py
-```
-
-Open the application in a browser:
-
-```text
-http://localhost:5000
-```
-
-The app is designed as a local single-user application. Uploaded files and generated work exist in memory and are cleared when the app restarts or a new project is created.
+For the complete step-by-step Windows instructions, see
+[Windows Installation and Run Guide](#windows-installation-and-run-guide).
 
 ---
 
@@ -426,26 +533,25 @@ The built-in dashboard provides useful generation statistics, but these are impl
 ## Project Structure
 
 ```text
-project/
-+-- README.md
-+-- backend/
-¦   +-- app.py
-¦   +-- text_extraction.py
-¦   +-- ocr_extraction.py
-¦   +-- nlp_utils.py
-¦   +-- concept_extraction.py
-¦   +-- question_generator.py
-¦   +-- multilingual_pipeline.py
-¦   +-- ollama_question_writer.py
-¦   +-- pipeline.py
-¦   +-- paper_builder.py
-¦   +-- pdf_export.py
-¦   +-- docx_export.py
-¦   +-- requirements.txt
-¦   +-- templates/
-¦   +-- static/
-¦   +-- test_*.py
-+-- .venv/
+Question-Paper-Generator/
+|-- README.md
+`-- backend/
+    |-- app.py
+    |-- requirements.txt
+    |-- text_extraction.py
+    |-- ocr_extraction.py
+    |-- nlp_utils.py
+    |-- concept_extraction.py
+    |-- question_generator.py
+    |-- multilingual_pipeline.py
+    |-- ollama_question_writer.py
+    |-- pipeline.py
+    |-- paper_builder.py
+    |-- pdf_export.py
+    |-- docx_export.py
+    |-- templates/
+    |-- static/
+    `-- test_*.py
 ```
 
 ---
