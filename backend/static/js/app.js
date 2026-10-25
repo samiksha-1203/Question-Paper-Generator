@@ -1046,6 +1046,43 @@ async function downloadFile(path, fallbackName) {
   }
 }
 
+const paperPreviewDialog = document.getElementById("paperPreviewDialog");
+const paperPreviewFrame = document.getElementById("paperPreviewFrame");
+let paperPreviewUrl = null;
+
+async function previewPaperPdf() {
+  const previewButton = document.getElementById("previewPaperPdf");
+  previewButton.disabled = true;
+  previewButton.textContent = "Preparing preview...";
+  try {
+    const res = await fetch("/api/export/paper/pdf", { method: "POST" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Could not create the question paper preview.");
+    }
+    const pdfBlob = await res.blob();
+    if (paperPreviewUrl) URL.revokeObjectURL(paperPreviewUrl);
+    paperPreviewUrl = URL.createObjectURL(pdfBlob);
+    paperPreviewFrame.src = paperPreviewUrl;
+    paperPreviewDialog.showModal();
+  } catch (e) {
+    toast(e.message, true);
+  } finally {
+    previewButton.disabled = false;
+    previewButton.textContent = "Preview Question Paper";
+  }
+}
+
+document.getElementById("previewPaperPdf").addEventListener("click", previewPaperPdf);
+document.getElementById("closePaperPreview").addEventListener("click", () => paperPreviewDialog.close());
+paperPreviewDialog.addEventListener("close", () => {
+  paperPreviewFrame.removeAttribute("src");
+  if (paperPreviewUrl) {
+    URL.revokeObjectURL(paperPreviewUrl);
+    paperPreviewUrl = null;
+  }
+});
+
 document.getElementById("exportPaperPdf").addEventListener("click", () => downloadFile("/api/export/paper/pdf", "question_paper.pdf"));
 document.getElementById("exportPaperDocx").addEventListener("click", () => downloadFile("/api/export/paper/docx", "question_paper.docx"));
 document.getElementById("exportKeyPdf").addEventListener("click", () => downloadFile("/api/export/answerkey/pdf", "answer_key.pdf"));

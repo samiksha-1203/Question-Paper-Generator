@@ -6,7 +6,7 @@
 <title>Question Paper Generator — NLP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=6">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=7">
 <script src="{{ url_for('static', filename='js/vendor/chart.umd.js') }}"></script>
 </head>
 <body>
@@ -236,6 +236,7 @@
     <div class="export-grid">
       <div class="card export-card">
         <h3>Question Paper</h3>
+        <button class="btn btn-ghost" id="previewPaperPdf">Preview Question Paper</button>
         <button class="btn btn-primary" id="exportPaperPdf">Download PDF</button>
         <button class="btn btn-secondary" id="exportPaperDocx">Download DOCX (editable)</button>
       </div>
@@ -253,6 +254,14 @@
 
 </main>
 
-<script src="{{ url_for('static', filename='js/app.js') }}?v=9"></script>
+<dialog class="paper-preview-dialog" id="paperPreviewDialog" aria-labelledby="paperPreviewTitle">
+  <div class="paper-preview-header">
+    <h2 id="paperPreviewTitle">Question Paper Preview</h2>
+    <button class="btn btn-ghost" id="closePaperPreview" type="button">Close</button>
+  </div>
+  <iframe id="paperPreviewFrame" title="PDF preview of the generated question paper"></iframe>
+</dialog>
+
+<script src="{{ url_for('static', filename='js/app.js') }}?v=10"></script>
 </body>
 </html>
